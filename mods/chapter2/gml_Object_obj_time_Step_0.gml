@@ -1,0 +1,29 @@
+// Start the native encounter after the room and party instances exist.
+if (variable_global_exists("bossroom_stage") && global.bossroom_stage == 1 && instance_exists(obj_mainchara))
+{
+    global.bossroom_delay += 1;
+    global.interact = 2;
+    var br_ready = true;
+    for (var br_t = 0; br_t < array_length(global.bossroom_pages); br_t++)
+        if (!texture_is_ready(global.bossroom_pages[br_t])) br_ready = false;
+    if (global.bossroom_delay >= 2 && br_ready)
+    {
+        global.bossroom_stage = 2;
+        with (obj_battletester) instance_destroy();
+        with (obj_chaseenemy) instance_destroy();
+        global.kbdBlocked = false;
+        global.encounterno = global.bossroom_encounter;
+        global.specialbattle = global.bossroom_special;
+        global.flag[9] = 1;
+        global.flag[54] = global.encounterno;
+        global.batmusic[0] = snd_init(global.bossroom_music);
+        if (global.encounterno == 84) { global.char[1] = 0; global.char[2] = 0; }
+        instance_create(0, 0, obj_battleback);
+        instance_create(0, 0, obj_encounterbasic);
+        show_debug_message("BOSSROOM: native encounter started " + string(global.encounterno));
+    }
+}
+
+if (scr_debug())
+{
+}
