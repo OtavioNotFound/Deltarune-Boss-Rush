@@ -1,0 +1,6 @@
+{
+ "name":"deltarune-boss-room-checks",
+ "private":true,
+ "scripts":{"test":"node --test tests/coop-core.test.cjs","test:browser":"node tests/coop-browser.cjs","test:mutation":"node tests/coop-mutation.cjs","check":"python check.py"},
+ "devDependencies":{"playwright":"1.62.1"}
+}

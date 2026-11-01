@@ -1,0 +1,21 @@
+#coop-panel{box-sizing:border-box;width:min(640px,calc(100vw - 24px));max-height:90vh;overflow:auto;border:3px solid #a355ee;background:#06050d;color:#eee;padding:20px;font:18px Determination,monospace}
+#coop-panel::backdrop{background:#000d}
+#coop-panel .dialog-top{gap:12px;align-items:flex-start}
+#coop-title{font-size:24px;min-width:0;overflow-wrap:anywhere}
+#coop-close{flex-shrink:0}
+#coop-panel::-webkit-scrollbar{display:block;width:6px}
+#coop-panel::-webkit-scrollbar-thumb{background:#a355ee}
+#coop-panel p{line-height:1.4}
+#coop-panel label{display:block;margin:14px 0 5px}
+#coop-panel textarea{box-sizing:border-box;width:100%;min-height:75px;resize:vertical;background:#111;color:white;border:1px solid #aaa;font:12px monospace;padding:8px}
+#coop-panel button,#coop-panel select{font:16px Determination,monospace;padding:8px;background:#110b1c;color:white;border:1px solid #a355ee;margin:4px 4px 4px 0}
+#coop-panel button:focus-visible,#coop-panel textarea:focus-visible,#coop-panel select:focus-visible{outline:2px solid #fff200;outline-offset:2px}
+#coop-status{color:#fff200;min-height:2em}
+#coop-open{position:fixed;right:12px;bottom:12px;z-index:60;font:17px Determination,monospace;padding:9px;color:#fff;background:#130a20;border:2px solid #a355ee}
+#coop-video{position:fixed;inset:48px 0 0;width:100%;height:calc(100% - 48px);object-fit:contain;background:#000;z-index:2;image-rendering:pixelated}
+#coop-banner{position:fixed;bottom:12px;left:12px;right:110px;box-sizing:border-box;padding:8px;background:#100a1b;color:#fff200;z-index:11;font:16px Determination,monospace;pointer-events:none}
+body.coop-guest #coop-banner{top:0;bottom:auto;right:0;height:48px}
+#coop-video[hidden],#coop-banner[hidden]{display:none}
+body.coop-guest #game-toolbar{display:none!important}
+body.coop-guest #main-menu-ui{display:none}
+body.coop-guest #hud-layer{z-index:12}

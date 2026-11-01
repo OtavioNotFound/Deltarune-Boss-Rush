@@ -1,0 +1,7 @@
+<!doctype html><html><head></head><body><canvas width="640" height="480" tabindex="0"></canvas><script>
+// Deterministic in-page bot world for transport/input QA, not a native combat test.
+const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d');
+window.world={x:320,y:240,actions:0,held:[],frames:0};const pressed=new Set();
+for(const type of ['keydown','keyup'])canvas.addEventListener(type,e=>{if(type==='keydown'){pressed.add(e.key);if(e.key==='z')world.actions++;}else pressed.delete(e.key);world.held=[...pressed];});
+setInterval(()=>{world.x+=3*(Number(pressed.has('ArrowRight'))-Number(pressed.has('ArrowLeft')));world.y+=3*(Number(pressed.has('ArrowDown'))-Number(pressed.has('ArrowUp')));world.frames++;ctx.fillStyle='#0b0717';ctx.fillRect(0,0,640,480);ctx.fillStyle='#fff';ctx.font='24px monospace';ctx.fillText('CO-OP INPUT / VIDEO TEST',80,80);ctx.fillStyle=world.frames%2?'#ff3333':'#dd2222';ctx.fillRect(world.x,world.y,20,20);},33);
+</script></body></html>
