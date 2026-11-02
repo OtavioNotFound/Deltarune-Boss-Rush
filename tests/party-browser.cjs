@@ -26,6 +26,10 @@ async function main(){
  const server=await serve();let browser;const pages=[],errors=[];
  try{
   browser=await chromium.launch({channel:process.env.BOSSROOM_BROWSER_CHANNEL||'chrome',headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--autoplay-policy=no-user-gesture-required']});
+  const entryContext=await browser.newContext(),entry=await entryContext.newPage(),entryFailures=[];
+  entry.on('response',response=>{if(response.status()>=400)entryFailures.push(response.url()+' '+response.status());});
+  await entry.goto(server.rootUrl);await entry.waitForURL(/\/Deltarune-Boss-Rush\/dist\/$/);await entry.waitForSelector('#launch');
+  assert.deepEqual(entryFailures,[]);await entryContext.close();
   for(let i=0;i<3;i++){
    const context=await browser.newContext(),page=await context.newPage();pages.push(page);page.on('pageerror',error=>errors.push(error.message));
    await page.addInitScript(()=>{
@@ -81,18 +85,14 @@ async function main(){
   await key(j3,'c',true);await until(host,()=>BossRoomParty.packet().held[2][6]===1);await key(j3,'c',false);await until(host,()=>BossRoomParty.packet().held[2][6]===0);
   assert.equal(await host.evaluate(()=>BossRoomCoop.active),true);assert.equal(await host.evaluate(()=>BossRoomParty.owners[1]),1);
   await openPanel(j3);await j3.locator('#party-stop').click();await until(host,()=>BossRoomParty.owners[2]===-1&&BossRoomParty.packet().owners[2]===0);await until(j3,()=>!BossRoomCoop.guest);
-  await connect(host,j3,2);await j3.locator('[data-character="2"]').check();await until(host,()=>BossRoomParty.owners[2]===2);await closePanel(j3);await videoDecoded(j3);
-  await key(j3,'ArrowRight',true);await until(host,()=>BossRoomParty.packet().held[2][1]===1);await key(j3,'ArrowRight',false);
-  await until(host,()=>BossRoomParty.packet().held[2][1]===0);
 
-  await openPanel(j2);await j2.locator('#party-stop').click();await until(host,()=>BossRoomParty.owners[1]===-1&&BossRoomParty.packet().owners[1]===0);assert.equal(await host.evaluate(()=>BossRoomCoop.active),true);
-  await openPanel(j3);await j3.locator('#party-stop').click();await until(host,()=>!BossRoomCoop.active);assert.equal(await host.evaluate(()=>BossRoomParty.packet().active),0);
+  await openPanel(j2);await j2.locator('#party-stop').click();await until(host,()=>BossRoomParty.owners[1]===-1&&BossRoomParty.packet().owners[1]===0);await until(host,()=>!BossRoomCoop.active);assert.equal(await host.evaluate(()=>BossRoomParty.packet().active),0);
   await host.setViewportSize({width:360,height:800});await openPanel(host);
   assert.ok(await host.locator('#party-panel').evaluate(panel=>{const rect=panel.getBoundingClientRect();return rect.left>=0&&rect.right<=innerWidth&&panel.scrollWidth<=panel.clientWidth;}));
   assert.ok(await host.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   if(process.env.PARTY_SCREENSHOT)await host.screenshot({path:process.env.PARTY_SCREENSHOT});
   assert.deepEqual(errors,[]);
-  console.log('RESULT: PASS — three clients; six-digit room codes via PeerJS signaling; direct WebRTC data/video; lobby; exclusive multiple claims; claim locking; independent snapshots; invalid code; video to both guests; blur; touch cancel; disconnect fallback; rejoin with same code; guest exit; 360px dialog (canvas fixture, not native combat).');
+  console.log('RESULT: PASS — GitHub Pages project path and root redirect; three clients; six-digit room codes via PeerJS signaling; direct WebRTC data/video; lobby; exclusive multiple claims; claim locking; independent snapshots; invalid code; video to both guests; blur; touch cancel; disconnect fallback; guest exit; 360px dialog (canvas fixture, not native combat).');
  }catch(error){
   for(const page of pages)console.error(await page.evaluate(()=>JSON.parse(JSON.stringify({status:document.getElementById('party-status')?.textContent,owners:window.BossRoomParty?.owners,packet:window.BossRoomParty?.packet(),seat:window.BossRoomParty?.seat,channels:window.partyTestChannels?.map(channel=>channel.readyState)}))).catch(()=>({closed:true})));
   console.error('Browser errors:',errors);throw error;

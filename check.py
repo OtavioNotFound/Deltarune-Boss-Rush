@@ -5,6 +5,10 @@ entry=Path('index.html').read_text(encoding='utf-8')
 assert 'url=./dist/' in entry and (p/'index.html').is_file()
 assert 'peerjs.min.js' in (p/'index.html').read_text(encoding='utf-8') and (p/'peerjs.LICENSE.txt').is_file()
 assert json.loads(Path('package.json').read_text(encoding='utf-8'))['devDependencies']['peerjs']=='1.5.5'
+for chapter in range(1,6):
+ html=(p/f'chapter{chapter}'/'index.html').read_text(encoding='utf-8')
+ assert 'native-battle.js?v=6' in html and 'game-layout.js?v=4' in html
+ assert f'location.origin + "/chapter{chapter}/' not in html and f"location.origin+'/chapter{chapter}/" not in html
 for file in p.rglob('*.html'):
  assert 'terminal.local' not in file.read_text(encoding='utf-8'), file
  for script in re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>',file.read_text(encoding='utf-8')):

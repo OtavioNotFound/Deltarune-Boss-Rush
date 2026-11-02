@@ -25,7 +25,8 @@
   }
   async function prepare(buffer){
     const status=document.getElementById('status');if(status)status.textContent='Preparando batalha direta…';
-    const base=location.origin+'/chapter'+root.BOSSROOM_CHAPTER+'/';
+    const siteBase=root.BOSSROOM_SITE_BASE||new URL('./',location.href).href;
+    const base=new URL('chapter'+root.BOSSROOM_CHAPTER+'/',siteBase).href;
     let payload;
     if(root.BOSSROOM_CHAPTER===5){
       const response=await fetch(base+'battle.patch.json?rev=5',{cache:'no-store'});
@@ -48,7 +49,7 @@
       payload=new Uint8Array(await new Response(new Blob([payload]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
     }
     let output=await apply(buffer,payload);
-    const manifestResponse=await fetch(location.origin+'/party-native.json',{cache:'no-store'});
+    const manifestResponse=await fetch(new URL('party-native.json',siteBase),{cache:'no-store'});
     if(!manifestResponse.ok)throw Error('Não foi possível verificar o suporte co-op.');
     const party=await manifestResponse.json();
     if(party.chapters.includes(root.BOSSROOM_CHAPTER)){

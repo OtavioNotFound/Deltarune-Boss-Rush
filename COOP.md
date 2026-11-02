@@ -32,6 +32,6 @@ npm test
 npm run test:browser
 ```
 
-O teste de navegador abre três contextos Chrome isolados e verifica códigos de sala, propriedade de personagens, entradas independentes, vídeo, perda de foco, reconexão e layout móvel. O teste nativo requer UndertaleModTool, arquivos do runtime fixados pelo projeto e uma compilação de QA local com ganchos de teste, que não deve ser distribuída. Consulte `MODDING.md` para a compilação.
+O teste de navegador abre três contextos Chrome isolados em um caminho de projeto do GitHub Pages e verifica o redirecionamento da raiz, códigos de sala, propriedade de personagens, entradas independentes, vídeo, saída e layout móvel. O teste nativo requer UndertaleModTool, arquivos do runtime fixados pelo projeto e uma compilação de QA local com ganchos de teste, que não deve ser distribuída. Consulte `MODDING.md` para a compilação.
 
 O co-op segue as práticas do [AGENTS.md do Co-op Anything](https://github.com/cranebeaker/coop-anything/blob/main/AGENTS.md), [autoridade da simulação](https://github.com/cranebeaker/coop-anything/blob/main/playbook/how-coop-mods-work.md) e [QA automatizado](https://github.com/cranebeaker/coop-anything/blob/main/playbook/automated-qa.md). Não há `AGENTS.md` no repositório do jogo.
