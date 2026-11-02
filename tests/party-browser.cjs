@@ -56,7 +56,7 @@ async function main(){
   await until(host,()=>BossRoomParty.owners[2]===2);await closePanel(j3);
   assert.deepEqual(await host.evaluate(()=>BossRoomParty.owners),[0,1,2]);
 
-  await key(host,'ArrowUp',true);await until(host,()=>BossRoomParty.packet().held[0][2]===1);
+  await key(host,'ArrowUp',true);await until(host,()=>BossRoomParty.packet().held[0][2]===1);await until(j2,()=>BossRoomParty.packet().held[0][2]===1);await until(j3,()=>BossRoomParty.packet().held[0][2]===1);
   await key(j2,'ArrowDown',true);await until(host,()=>BossRoomParty.packet().held[1][0]===1);
   await key(j3,'z',true);await until(j3,()=>BossRoomParty.packet().held[2][4]===1);await until(host,()=>BossRoomParty.packet().held[2][4]===1);
   await key(host,'ArrowUp',false);await key(j2,'ArrowDown',false);await key(j3,'z',false);
