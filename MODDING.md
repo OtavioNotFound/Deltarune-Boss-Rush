@@ -33,3 +33,9 @@ Chapter 1's room_battletest is an empty 2x2 placeholder, so direct battle was st
 ## Pixel menu redesign
 
 The selector now uses the upstream Determination font and exported native boss sprites, a keyboard/touch carousel, themed pixel frames, a red soul cursor, a dialogue box and LUTAR action. Chapter filtering, direct encounter launch and restart still use the same battle preparation. Options expose existing touch controls and real menu-sound volume; unsupported modifiers or scores are not represented. Verified arrow-key selection, chapter 5 filtering and options dialog. A 360px-wide browser fixture had 360px document scroll width, loaded sprite artwork, and a 328px-wide fight button. Temporary fixture removed before publication.
+
+## Experimental character party co-op
+
+`mods/coop` contains the GameMaker changes for independent souls, owner-specific inputs, native hit routing and combat telemetry. `scripts/apply-party-coop.csx` compiles those edits on top of each chapter's already patched direct-battle baseline. The checked-in co-op overlays are enabled only for chapters 1–3 in `dist/party-native.json`; chapters 4 and 5 remain solo. Chapter 1 is the only chapter covered by the current native gameplay QA. Chapters 2–3 overlays compile, but their boss gameplay and all three chapters' full encounter sets still need validation.
+
+To rebuild, first prepare the same chapter baseline used by direct battle above, then run UndertaleModTool CLI 0.9.2.0 with `BOSSROOM_COOP_ROOT` set to this repository and `scripts/apply-party-coop.csx`. Package the baseline and result with `scripts/package_native_patch.py` into `dist/chapterN/coop.patch.gz`. For a local Chapter 1 QA build only, set `BOSSROOM_COOP_QA=1` before compiling. QA hooks create a controlled arena and bullet to test real GameMaker collisions and damage; never publish that QA patch. See `COOP.md` for the browser and native test commands and current coverage.

@@ -47,7 +47,18 @@
       if(typeof DecompressionStream==='undefined')throw Error('Atualize o navegador para usar batalhas diretas.');
       payload=new Uint8Array(await new Response(new Blob([payload]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
     }
-    const output=await apply(buffer,payload);if(status)status.textContent='Iniciando batalha…';return output;
+    let output=await apply(buffer,payload);
+    const manifestResponse=await fetch(location.origin+'/party-native.json',{cache:'no-store'});
+    if(!manifestResponse.ok)throw Error('Não foi possível verificar o suporte co-op.');
+    const party=await manifestResponse.json();
+    if(party.chapters.includes(root.BOSSROOM_CHAPTER)){
+      const response=await fetch(base+'coop.patch.gz',{cache:'no-store'});
+      if(!response.ok)throw Error('Patch co-op indisponível.');
+      const bytes=await response.arrayBuffer();
+      const raw=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+      output=await apply(output,raw);
+    }
+    if(status)status.textContent='Iniciando batalha…';return output;
   }
   root.BossRoomPatch={apply,prepare};
   if(typeof module!=='undefined')module.exports=root.BossRoomPatch;

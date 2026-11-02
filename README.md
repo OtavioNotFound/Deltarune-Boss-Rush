@@ -21,4 +21,8 @@ Abra http://localhost:8000 em um navegador com WebGL habilitado.
 
 O conteúdo a publicar em uma hospedagem estática fica em `dist/`.
 
-Modo de batalha experimental: as batalhas ainda precisam de validação completa no navegador. Créditos do port e checkpoints em `dist/README.txt`.
+## Co-op experimental
+
+O botão **CO-OP** permite até três jogadores escolherem Kris, Susie e Ralsei, inclusive mais de um personagem por jogador. Na defesa, cada pessoa controla sua própria alma; um golpe machuca um personagem vivo pertencente a quem foi atingido. Requer conexão WebRTC direta e ainda é experimental. Instruções e limitações em [COOP.md](COOP.md).
+
+O co-op nativo está habilitado nos capítulos 1–3; os capítulos 4–5 continuam no modo solo. As batalhas ainda precisam de validação completa. Créditos do port e checkpoints em `dist/README.txt`.
