@@ -21,6 +21,8 @@ Abra http://localhost:8000 em um navegador com WebGL habilitado.
 
 O conteúdo a publicar em uma hospedagem estática fica em `dist/`.
 
+Para GitHub Pages configurado como `main` + raiz, `index.html` encaminha para o site em `dist/`. Essa entrada estará disponível depois que a PR for integrada à `main`.
+
 ## Co-op experimental
 
 O botão **CO-OP** permite até três jogadores escolherem Kris, Susie e Ralsei, inclusive mais de um personagem por jogador. Na defesa, cada pessoa controla sua própria alma; um golpe machuca um personagem vivo pertencente a quem foi atingido. Requer conexão WebRTC direta e ainda é experimental. Instruções e limitações em [COOP.md](COOP.md).
