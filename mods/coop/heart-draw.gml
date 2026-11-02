@@ -4,7 +4,7 @@ if (global.br_active)
     var old_color = draw_get_color();
     var old_alpha = draw_get_alpha();
     draw_set_color(colors[br_owner]);
-    draw_set_alpha(image_alpha);
+    draw_set_alpha(image_alpha * (br_owner == global.br_local_seat ? 1 : 0.28));
     // Native red pixels cannot be recolored by multiplication; draw a matching
     // pixel silhouette while keeping the original sprite's collision mask.
     if (br_inv < 0 || floor(br_inv / 3) mod 2 == 0)

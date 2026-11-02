@@ -2,7 +2,7 @@
 
 Cada pessoa pode escolher Kris, Susie, Ralsei ou mais de um. O dono controla os turnos dos seus personagens e, na defesa, controla uma alma própria. Quando a alma é atingida, o dano vai para um personagem vivo daquele jogador. Preserva o alvo do ataque se ele pertencer ao jogador; se estiver caído ou pertencer a outra pessoa, redireciona para um personagem vivo que ele possui. Cada golpe machuca apenas um personagem.
 
-O anfitrião executa a simulação e mantém os saves. Até três jogadores podem participar. Os convidados recebem vídeo sem áudio. Personagens sem dono conectado ficam com o anfitrião.
+Cada navegador executa uma cópia local da batalha. O anfitrião avisa quando começar e qual chefe carregar; a conexão troca escolhas, personagens e controles por dados P2P. Nenhuma imagem ou áudio é transmitido. Cada cópia usa uma semente diferente para variar os padrões aleatórios. Até três jogadores podem participar. Personagens sem dono conectado ficam com o anfitrião.
 
 ## Entrar numa sala
 
@@ -15,10 +15,10 @@ J2 e J3 são atribuídos automaticamente pela ordem de entrada. Cada jogador pod
 
 ## P2P e rede
 
-- O código curto é o endereço temporário da sala no PeerJS Cloud, usado para sinalização inicial. O projeto inclui o cliente PeerJS 1.5.5. Controles e vídeo usam WebRTC; normalmente seguem direto entre os navegadores, mas o PeerJS também configura TURN público como alternativa quando a rede não permite conexão direta. O serviço é compartilhado e pode ficar indisponível. O [FAQ do PeerJS](https://peerjs.com/client/faq) explica essa divisão.
+- O código curto é o endereço temporário da sala no PeerJS Cloud, usado para sinalização inicial. O projeto inclui o cliente PeerJS 1.5.5. Os dados usam WebRTC e normalmente seguem direto entre os navegadores. O serviço é compartilhado e pode ficar indisponível. O [FAQ do PeerJS](https://peerjs.com/client/faq) explica essa divisão.
 - O código de 6 dígitos funciona como convite, não como autenticação forte. Compartilhe apenas com amigos e use a sala logo após criá-la. O código para de funcionar quando o anfitrião encerra a sala. Em caso raro de código já ocupado, o jogo tenta gerar outro.
-- Não há TURN próprio. O PeerJS usa TURN público, que pode retransmitir mídia quando a conexão direta falha; desempenho e disponibilidade podem variar. O áudio do jogo permanece no anfitrião.
-- Não há servidor de jogo, autoridade central, migração de anfitrião ou reconexão automática. O anfitrião é a autoridade do combate. A sinalização usa o PeerJS Cloud; o jogo e vídeo normalmente seguem direto, mas podem passar pelo relay TURN público.
+- Não há TURN próprio. O PeerJS pode usar TURN público como alternativa quando a conexão direta falha; desempenho e disponibilidade podem variar.
+- Não há servidor de jogo, migração de anfitrião ou reconexão automática. Cada navegador roda localmente e recebe os controles dos outros pelo anfitrião. Perda ou atraso de pacotes pode fazer as simulações divergirem; não há correção de estado nem rollback.
 - A implementação nativa está habilitada nos capítulos 1–3; os capítulos 4–5 continuam solo. O combate nativo foi testado apenas no capítulo 1 por meio de uma arena QA controlada. Os patches dos capítulos 2–3 compilam, mas ainda não foram exercitados em combate.
 - Não foi validada vitória de chefe, cobertura integral dos ataques, rede externa em vários provedores, sessões longas ou dispositivos móveis físicos. Encontros que removem membros do grupo podem limitar quais personagens estão disponíveis.
 
@@ -32,6 +32,6 @@ npm test
 npm run test:browser
 ```
 
-O teste de navegador abre três contextos Chrome isolados em um caminho de projeto do GitHub Pages e verifica o redirecionamento da raiz, códigos de sala, propriedade de personagens, entradas independentes, vídeo, saída e layout móvel. O teste nativo requer UndertaleModTool, arquivos do runtime fixados pelo projeto e uma compilação de QA local com ganchos de teste, que não deve ser distribuída. Consulte `MODDING.md` para a compilação.
+O teste de navegador abre três contextos Chrome isolados em um caminho de projeto do GitHub Pages e verifica o redirecionamento da raiz, códigos de sala, propriedade de personagens, lançamento sincronizado, entradas independentes, ausência de faixas de mídia, saída e layout móvel. O teste nativo requer UndertaleModTool, arquivos do runtime fixados pelo projeto e uma compilação de QA local com ganchos de teste, que não deve ser distribuída. Consulte `MODDING.md` para a compilação.
 
 O co-op segue as práticas do [AGENTS.md do Co-op Anything](https://github.com/cranebeaker/coop-anything/blob/main/AGENTS.md), [autoridade da simulação](https://github.com/cranebeaker/coop-anything/blob/main/playbook/how-coop-mods-work.md) e [QA automatizado](https://github.com/cranebeaker/coop-anything/blob/main/playbook/automated-qa.md). Não há `AGENTS.md` no repositório do jogo.

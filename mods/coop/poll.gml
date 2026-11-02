@@ -4,6 +4,13 @@ if (string_copy(br_text, 1, 8) == "BRPARTY:")
     global.br_packet = json_parse(string_delete(br_text, 1, 8));
     global.br_active = global.br_packet.active == 1;
     global.br_owners = global.br_packet.owners;
+    global.br_local_seat = variable_struct_exists(global.br_packet, "local_seat") ? global.br_packet.local_seat : 0;
+    if (global.br_active && !global.br_seeded)
+    {
+        random_set_seed(18237 + global.br_local_seat * 100003);
+        global.br_seeded = true;
+    }
+    else if (!global.br_active) global.br_seeded = false;
     for (var bs = 0; bs < 3; bs++)
     {
         for (var bk = 0; bk < 10; bk++)

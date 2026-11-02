@@ -15,6 +15,8 @@ if (audio_group_is_loaded(audio_sfx) && ossafe_file_exists("bossroom.ini"))
         for (var br_i = 0; br_i < br_count; br_i++)
             br_stats[br_i] = [global.maxhp[br_i], global.at[br_i], global.df[br_i], global.mag[br_i], global.guts[br_i]];
         scr_load();
+        var br_loadout = [2, 2, 2, 2, 6, 7, 16, 16, 1, 1, 8, 8];
+        for (var br_itemslot = 0; br_itemslot < 12; br_itemslot++) global.item[br_itemslot] = br_loadout[br_itemslot];
         br_count = min(br_count, min(array_length(global.hp), array_length(global.maxhp), array_length(global.at), array_length(global.df), array_length(global.mag), array_length(global.guts)));
         for (var br_i = 0; br_i < br_count; br_i++)
         {

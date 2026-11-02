@@ -5,6 +5,14 @@ entry=Path('index.html').read_text(encoding='utf-8')
 assert 'url=./dist/' in entry and (p/'index.html').is_file()
 assert 'peerjs.min.js' in (p/'index.html').read_text(encoding='utf-8') and (p/'peerjs.LICENSE.txt').is_file()
 assert json.loads(Path('package.json').read_text(encoding='utf-8'))['devDependencies']['peerjs']=='1.5.5'
+party_js=(p/'party.js').read_text(encoding='utf-8')
+assert 'captureStream' not in party_js and "type:'launch'" in party_js and "type:'state'" in party_js
+assert 'BATALHA LOCAL' in (p/'selector.js').read_text(encoding='utf-8')
+for chapter in range(1,6):
+ initializer=Path(f'mods/chapter{chapter}/gml_Object_obj_initializer2_Step_0.gml').read_text(encoding='utf-8')
+ expected='[2, 2, 2, 2, 6, 7, 16, 16, 1, 1, 8, 8]' if chapter==1 else '[2, 2, 2, 2, 6, 7, 27, 27, 1, 1, 8, 8]'
+ assert expected in initializer, f'chapter {chapter} starting item loadout'
+assert Path('scripts/apply-item-loadout.csx').is_file()
 for chapter in range(1,6):
  html=(p/f'chapter{chapter}'/'index.html').read_text(encoding='utf-8')
  assert 'native-battle.js?v=6' in html and 'game-layout.js?v=4' in html
