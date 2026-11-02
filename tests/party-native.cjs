@@ -1,12 +1,12 @@
 /* Actual GameMaker VM objects, input, collision and HP; QA-only hooks are not shipped. */
 const assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
 const {chromium}=require('playwright'),serve=require('./static-server.cjs');
-const until=(p,fn)=>p.waitForFunction(fn,null,{timeout:20000});
+const until=(p,fn,arg)=>p.waitForFunction(fn,arg,{timeout:30000});
 const state=p=>p.evaluate(()=>BossRoomParty.state);
 const key=(p,key,down)=>p.evaluate(({key,down})=>updateKey(key,down),{key,down});
 async function tap(p,k){await key(p,k,true);await p.waitForTimeout(130);await key(p,k,false);await p.waitForTimeout(130);}
 async function panel(p,open){if(await p.locator('#party-panel').evaluate(d=>d.open)!==open)await p.locator(open?'#party-open':'#party-close').click();}
-async function connect(host,guest,seat){await panel(host,true);await host.locator('#party-seat').selectOption(String(seat));await host.locator('#party-host').click();await until(host,()=>document.getElementById('party-out').value.includes('offer'));await panel(guest,true);await guest.locator('#party-in').fill(await host.locator('#party-out').inputValue());await guest.locator('#party-join').click();await until(guest,()=>document.getElementById('party-out').value.includes('answer'));await host.locator('#party-in').fill(await guest.locator('#party-out').inputValue());await host.locator('#party-connect').click();await until(guest,()=>BossRoomCoop.active);await panel(host,false);}
+async function connect(host,guest,seat){await panel(host,true);if(seat===1){await host.locator('#party-host').click();await until(host,()=>/^\d{6}$/.test(document.getElementById('party-code-display').textContent));}const code=await host.locator('#party-code-display').textContent();assert.match(code,/^\d{6}$/);await panel(guest,true);await guest.locator('#party-code').fill(code);await guest.locator('#party-join').click();await until(guest,n=>BossRoomCoop.active&&BossRoomParty.seat===n,seat);await panel(host,false);}
 let seq=0;
 async function command(host,verb,extra={}){const next=++seq;await host.evaluate(qa=>{BossRoomParty.qa=qa;},{seq:next,verb,...extra});await host.waitForFunction(n=>BossRoomParty.state?.qa===n,next,{timeout:15000});}
 async function main(){

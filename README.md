@@ -25,6 +25,6 @@ Para GitHub Pages configurado como `main` + raiz, `index.html` encaminha para o 
 
 ## Co-op experimental
 
-O botão **CO-OP** permite até três jogadores escolherem Kris, Susie e Ralsei, inclusive mais de um personagem por jogador. Na defesa, cada pessoa controla sua própria alma; um golpe machuca um personagem vivo pertencente a quem foi atingido. Requer conexão WebRTC direta e ainda é experimental. Instruções e limitações em [COOP.md](COOP.md).
+O botão **CO-OP** permite até três jogadores escolherem Kris, Susie e Ralsei, inclusive mais de um personagem por jogador. Para jogar junto, o anfitrião cria uma sala e envia um código de seis dígitos; os amigos digitam o código para entrar. Na defesa, cada pessoa controla sua própria alma. A conexão do jogo usa WebRTC P2P e ainda é experimental. Instruções e limitações em [COOP.md](COOP.md).
 
 O co-op nativo está habilitado nos capítulos 1–3; os capítulos 4–5 continuam no modo solo. As batalhas ainda precisam de validação completa. Créditos do port e checkpoints em `dist/README.txt`.

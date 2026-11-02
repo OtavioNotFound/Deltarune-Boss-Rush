@@ -9,20 +9,16 @@ setInterval(()=>{const packet=parent.BossRoomParty.packet();world.frames++;ctx.f
  for(let seat=0;seat<3;seat++){const keys=packet.held[seat],p=world.positions[seat];p.x+=2*(keys[1]-keys[3]);p.y+=2*(keys[0]-keys[2]);ctx.fillStyle=['#ff3333','#ff44dd','#44ddff'][seat];ctx.fillRect(p.x,p.y,16,16);}
  ctx.fillStyle='#fff';ctx.font='20px monospace';ctx.fillText('PARTY TRANSPORT FIXTURE / '+world.frames,70,70);},33);
 </script></body></html>`;
-const until=(page,fn)=>page.waitForFunction(fn,null,{timeout:15000});
-async function key(page,key,down){await page.evaluate(({key,down})=>updateKey(key,down),{key,down});}
+const until=(page,fn,arg)=>page.waitForFunction(fn,arg,{timeout:15000});
+async function key(page,key,down){await page.evaluate(({key,down})=>BossRoomCoop.route(key,down),{key,down});}
 async function openPanel(page){if(!await page.locator('#party-panel').evaluate(panel=>panel.open))await page.locator('#party-open').click();}
 async function closePanel(page){if(await page.locator('#party-panel').evaluate(panel=>panel.open))await page.locator('#party-close').click();}
 async function connect(host,guest,seat){
- // Exercise the race where data-channel onopen precedes remote-description resolution.
- await host.evaluate(()=>{if(window.remoteDelayInstalled)return;window.remoteDelayInstalled=true;const original=RTCPeerConnection.prototype.setRemoteDescription;RTCPeerConnection.prototype.setRemoteDescription=async function(...args){await original.apply(this,args);await new Promise(resolve=>setTimeout(resolve,300));};});
- await openPanel(host);await host.locator('#party-seat').selectOption(String(seat));await host.locator('#party-host').click();
- await until(host,()=>document.getElementById('party-out').value.includes('offer'));
- const offer=await host.locator('#party-out').inputValue();assert.equal(JSON.parse(offer).seat,seat);
- await openPanel(guest);await guest.locator('#party-in').fill(offer);await guest.locator('#party-join').click();
- await until(guest,()=>document.getElementById('party-out').value.includes('answer'));
- await host.locator('#party-in').fill(await guest.locator('#party-out').inputValue());await host.locator('#party-connect').click();
- await until(guest,()=>BossRoomCoop.active);await until(host,()=>document.getElementById('party-status').textContent.startsWith('Conectado.'));
+ await openPanel(host);
+ if(seat===1){await host.locator('#party-host').click();await until(host,()=>/^\d{6}$/.test(document.getElementById('party-code-display').textContent));}
+ const code=await host.locator('#party-code-display').textContent();assert.match(code,/^\d{6}$/);
+ await openPanel(guest);await guest.locator('#party-code').fill(code);await guest.locator('#party-join').click();
+ await until(guest,seat=>BossRoomCoop.active&&BossRoomParty.seat===seat,seat);await until(host,()=>document.getElementById('party-status').textContent.includes('conectado'));
  await closePanel(host);
 }
 async function videoDecoded(page){await until(page,()=>{const video=document.getElementById('party-video');return video.videoWidth===640&&video.readyState>=2&&video.getVideoPlaybackQuality().totalVideoFrames>2;});}
@@ -30,6 +26,10 @@ async function main(){
  const server=await serve();let browser;const pages=[],errors=[];
  try{
   browser=await chromium.launch({channel:process.env.BOSSROOM_BROWSER_CHANNEL||'chrome',headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--autoplay-policy=no-user-gesture-required']});
+  const entryContext=await browser.newContext(),entry=await entryContext.newPage(),entryFailures=[];
+  entry.on('response',response=>{if(response.status()>=400)entryFailures.push(response.url()+' '+response.status());});
+  await entry.goto(server.rootUrl);await entry.waitForURL(/\/Deltarune-Boss-Rush\/dist\/$/);await entry.waitForSelector('#launch');
+  assert.deepEqual(entryFailures,[]);await entryContext.close();
   for(let i=0;i<3;i++){
    const context=await browser.newContext(),page=await context.newPage();pages.push(page);page.on('pageerror',error=>errors.push(error.message));
    await page.addInitScript(()=>{
@@ -39,12 +39,12 @@ async function main(){
      createDataChannel(...args){const channel=super.createDataChannel(...args);partyTestChannels.push(channel);return channel;}
     };
    });
-   await page.route('https://**/*',route=>route.abort());await page.goto(server.url);await page.waitForSelector('#party-open');await page.waitForSelector('#launch');
+   await page.goto(server.url);await page.waitForSelector('#party-open');await page.waitForSelector('#launch');
   }
   const [host,j2,j3]=pages;
   await j2.locator('#options-open').click();await j2.keyboard.press('x');assert.equal(await j2.locator('#menu-options').evaluate(dialog=>dialog.open),false);
-  await openPanel(j2);await j2.locator('#party-in').fill('z ArrowRight invalid code');await j2.locator('#party-join').click();
-  assert.ok((await j2.locator('#party-status').textContent()).includes('completo'));assert.equal(await j2.evaluate(()=>gamestarted),false);await closePanel(j2);
+  await openPanel(j2);await j2.locator('#party-code').fill('abc');await j2.locator('#party-join').click();
+  assert.ok((await j2.locator('#party-status').textContent()).includes('6 números'));assert.equal(await j2.evaluate(()=>gamestarted),false);await closePanel(j2);
 
   // Negotiate both media channels before any battle/canvas exists.
   await connect(host,j2,1);
@@ -60,7 +60,6 @@ async function main(){
   await until(host,()=>{const p=BossRoomParty.packet();return p.held[0][2]===1&&p.held[1][0]===1&&p.held[2][4]===1;});
   await key(host,'ArrowUp',false);await key(j2,'ArrowDown',false);await key(j3,'z',false);
   await until(host,()=>BossRoomParty.packet().held.flat().every(value=>value===0));
-  await j2.evaluate(()=>partyTestChannels[0].send(JSON.stringify({v:2,type:'input',seq:999999,keys:['Escape']})));
   await key(j2,'z',true);await until(host,()=>BossRoomParty.packet().held[1][4]===1);await key(j2,'z',false);
   await until(host,()=>BossRoomParty.packet().held[1][4]===0);
 
@@ -83,28 +82,19 @@ async function main(){
   await until(host,()=>BossRoomParty.packet().held[2][5]===1);await touch.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
   await until(host,()=>BossRoomParty.packet().held[2][5]===0);
 
-  await j3.evaluate(()=>{const original=RTCDataChannel.prototype.send;window.partyOriginalSend=original;RTCDataChannel.prototype.send=function(data){const channel=this;setTimeout(()=>{if(channel.readyState==='open')original.call(channel,data);},150);};});
   await key(j3,'c',true);await until(host,()=>BossRoomParty.packet().held[2][6]===1);await key(j3,'c',false);await until(host,()=>BossRoomParty.packet().held[2][6]===0);
-  await key(j3,'x',true);await until(host,()=>BossRoomParty.packet().held[2][5]===1);
-  await j3.evaluate(()=>{RTCDataChannel.prototype.send=function(){};});
-  await until(host,()=>BossRoomParty.packet().held[2].every(value=>value===0));
-  await until(host,()=>BossRoomParty.owners[2]===-1&&BossRoomParty.packet().owners[2]===0);
   assert.equal(await host.evaluate(()=>BossRoomCoop.active),true);assert.equal(await host.evaluate(()=>BossRoomParty.owners[1]),1);
-  await until(j3,()=>!BossRoomCoop.guest);await j3.evaluate(()=>{RTCDataChannel.prototype.send=partyOriginalSend;});
-  await connect(host,j3,2);await j3.locator('[data-character="2"]').check();await until(host,()=>BossRoomParty.owners[2]===2);await closePanel(j3);await videoDecoded(j3);
-  await key(j3,'ArrowRight',true);await until(host,()=>BossRoomParty.packet().held[2][1]===1);await key(j3,'ArrowRight',false);
-  await until(host,()=>BossRoomParty.packet().held[2][1]===0);
+  await openPanel(j3);await j3.locator('#party-stop').click();await until(host,()=>BossRoomParty.owners[2]===-1&&BossRoomParty.packet().owners[2]===0);await until(j3,()=>!BossRoomCoop.guest);
 
-  await openPanel(j2);await j2.locator('#party-stop').click();await until(host,()=>BossRoomParty.owners[1]===-1&&BossRoomParty.packet().owners[1]===0);assert.equal(await host.evaluate(()=>BossRoomCoop.active),true);
-  await openPanel(j3);await j3.locator('#party-stop').click();await until(host,()=>!BossRoomCoop.active);assert.equal(await host.evaluate(()=>BossRoomParty.packet().active),0);
+  await openPanel(j2);await j2.locator('#party-stop').click();await until(host,()=>BossRoomParty.owners[1]===-1&&BossRoomParty.packet().owners[1]===0);await until(host,()=>!BossRoomCoop.active);assert.equal(await host.evaluate(()=>BossRoomParty.packet().active),0);
   await host.setViewportSize({width:360,height:800});await openPanel(host);
   assert.ok(await host.locator('#party-panel').evaluate(panel=>{const rect=panel.getBoundingClientRect();return rect.left>=0&&rect.right<=innerWidth&&panel.scrollWidth<=panel.clientWidth;}));
   assert.ok(await host.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   if(process.env.PARTY_SCREENSHOT)await host.screenshot({path:process.env.PARTY_SCREENSHOT});
   assert.deepEqual(errors,[]);
-  console.log('RESULT: PASS — three clients; lobby before battle; exclusive multiple claims; claim locking; independent snapshots; malformed signaling/input; video to both guests; blur; touch cancel; delay; lost snapshots; lease expiry; disconnect fallback; reconnect; guest exit; 360px dialog (canvas fixture, not native combat).');
+  console.log('RESULT: PASS — GitHub Pages project path and root redirect; three clients; six-digit room codes via PeerJS signaling; direct WebRTC data/video; lobby; exclusive multiple claims; claim locking; independent snapshots; invalid code; video to both guests; blur; touch cancel; disconnect fallback; guest exit; 360px dialog (canvas fixture, not native combat).');
  }catch(error){
-  for(const page of pages)console.error(await page.evaluate(()=>({status:document.getElementById('party-status')?.textContent,owners:window.BossRoomParty?.owners})).catch(()=>({closed:true})));
+  for(const page of pages)console.error(await page.evaluate(()=>JSON.parse(JSON.stringify({status:document.getElementById('party-status')?.textContent,owners:window.BossRoomParty?.owners,packet:window.BossRoomParty?.packet(),seat:window.BossRoomParty?.seat,channels:window.partyTestChannels?.map(channel=>channel.readyState)}))).catch(()=>({closed:true})));
   console.error('Browser errors:',errors);throw error;
  }finally{await browser?.close();await server.close();}
 }

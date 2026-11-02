@@ -335,12 +335,12 @@
         display: none;
       }
     </style>
-  <script>window.BOSSROOM_CHAPTER=4;</script><script src="__BOSS_ORIGIN__/native-battle.js?v=5"></script><style>
+  <script>window.BOSSROOM_CHAPTER=4;</script><script src="__BOSS_ORIGIN__/native-battle.js?v=6"></script><style>
 html,body{margin:0!important;padding:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;overflow:hidden!important;background:#000!important}
 body{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important}
 canvas.emscripten{flex:none!important;position:relative!important;image-rendering:pixelated}
 .output-container,#output-container{display:none!important}
-</style><script src="__BOSS_ORIGIN__/game-layout.js?v=3"></script></head>
+</style><script src="__BOSS_ORIGIN__/game-layout.js?v=4"></script></head>
   <body>
     <canvas
       class="emscripten"
@@ -438,11 +438,11 @@ XMLHttpRequest.prototype.open = function (method, url, ...rest) {
     return originalOpen.call(this, method, url, ...rest);
 };
 let index = document.createElement("script");
-index.async = false; index.src = location.origin + "/chapter4/index.js?v=3";
+index.async = false; index.src = window.BOSSROOM_SITE_BASE + "chapter4/index.js?v=3";
 document.body.appendChild(index);
 
 let runner = document.createElement("script");
-runner.async = false; runner.src = location.origin + "/chapter4/runner.js";
+runner.async = false; runner.src = window.BOSSROOM_SITE_BASE + "chapter4/runner.js";
 document.body.appendChild(runner);
   }).catch(error => {
       console.error("Failed to merge files:", error); document.getElementById("status").textContent="Falha no download. Volte ao menu e tente novamente. "+error.message; document.getElementById("spinner").hidden=true;

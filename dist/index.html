@@ -122,7 +122,7 @@
 #playing-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis}
 #game-frame{top:48px;width:100%;height:calc(100vh - 48px);height:calc(100dvh - 48px)}
 @media(max-width:420px){#game-toolbar{gap:4px;padding:6px}#game-toolbar button{font-size:8px;padding:7px 5px}}
-</style><link rel="stylesheet" href="./selector.css?v=6"><link rel="stylesheet" href="./party.css?v=2"></head>
+</style><link rel="stylesheet" href="./selector.css?v=6"><link rel="stylesheet" href="./party.css?v=3"></head>
 <body>
 <main id="main-menu-ui">
 <div class="cathedral" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
@@ -321,6 +321,7 @@
     }
     
     const frame = document.getElementById('game-frame');
+    const assetBase = new URL('./', location.href).href;
     const audioUnlock=document.getElementById('audio-unlock');
     audioUnlock.onclick=()=>frame.contentWindow?.postMessage({type:'bossroom-audio-resume'},location.origin);
     window.addEventListener('message',event=>{
@@ -479,11 +480,13 @@
     function injectAndLoad(htmlText) {
         const receiver = `<script>
             const bridge=document.createElement('script');
-            bridge.src=location.origin+'/game-input.js?v=7';
+            window.BOSSROOM_SITE_BASE=${JSON.stringify(assetBase)};
+            bridge.src=window.BOSSROOM_SITE_BASE+'game-input.js?v=8';
             bridge.onload=()=>BossRoomInput.installReceiver(window);
             document.head.appendChild(bridge);
         <\/script>`;
-        const blob = new Blob([htmlText.replace('<head>', '<head>' + receiver)], { type: 'text/html' });
+        const gameHtml=htmlText.replaceAll('__BOSS_ORIGIN__',assetBase.replace(/\/$/,''));
+        const blob = new Blob([gameHtml.replace('<head>', '<head>' + receiver)], { type: 'text/html' });
         frame.src = URL.createObjectURL(blob);
         document.getElementById('loader-screen').style.display = 'none';
     }
@@ -506,7 +509,7 @@
         }
         return res.text();
       }).then(html => {
-         injectAndLoad(html.replaceAll('__BOSS_ORIGIN__', location.origin));
+         injectAndLoad(html);
       }).catch(error => {
         console.error(error);
         document.getElementById('loader-screen').innerHTML = '<p>Não foi possível carregar. <a href="./">Voltar aos chefes</a></p>'; 
@@ -611,5 +614,5 @@
         applyConfig();
     };
   </script>
-<script src="./party-core.js?v=2"></script><script src="./party.js?v=2"></script><script src="./selector.js?v=8"></script></body>
+<script src="./party-core.js?v=2"></script><script src="./peerjs.min.js?v=1.5.5"></script><script src="./party.js?v=3"></script><script src="./selector.js?v=8"></script></body>
 </html>
