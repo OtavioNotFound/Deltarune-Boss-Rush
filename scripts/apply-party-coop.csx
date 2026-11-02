@@ -70,7 +70,8 @@ Replace("gml_Object_obj_grazebox_Collision_obj_collidebullet", "var br_graze_inv
 var attackName = "gml_Object_obj_attackpress_Draw_0";
 var attack = Text(attackName);
 var scoring = Regex.Match(attack, @"if \(global\.flag\[13\] == 1\)\s*\{\s*if \(button1_p\(\) && havechar\[0\] == 1\)[\s\S]*?scr_boltcheck_onebutton\(0\);\s*\}");
-if (!scoring.Success) throw new Exception("Attack timing seam changed");
+if (scoring.Success)
+{
 var partyScoring = @"if (global.br_active) {
  for (var slot = 0; slot < 3; slot++) {
   var ch = global.char[slot];
@@ -78,7 +79,8 @@ var partyScoring = @"if (global.br_active) {
  }
 } else { " + scoring.Value + " }";
 Replace(attackName, attack.Replace(scoring.Value, partyScoring));
-if (Data.Code.ByName("gml_Object_obj_rudebuster_bolt_Step_0") != null)
+}
+else if (Data.Code.ByName("gml_Object_obj_rudebuster_bolt_Step_0") != null)
 {
  var bolt = Text("gml_Object_obj_rudebuster_bolt_Step_0");
  Replace("gml_Object_obj_rudebuster_bolt_Step_0", One(bolt, "button1_p()", "(global.br_active ? global.br_pressed[global.br_owners[global.char[caster] - 1]][4] : button1_p())"));

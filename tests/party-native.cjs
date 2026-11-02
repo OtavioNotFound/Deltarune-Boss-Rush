@@ -16,17 +16,20 @@ async function main(){
   browser=await chromium.launch({channel:process.env.BOSSROOM_BROWSER_CHANNEL||'chrome',headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--autoplay-policy=no-user-gesture-required']});
   for(let i=0;i<3;i++){const p=await(await browser.newContext()).newPage();pages.push(p);p.on('pageerror',e=>errors.push(e.message));p.on('dialog',async d=>{errors.push(d.message());await d.dismiss();});await p.goto(server.url);await p.waitForSelector('#launch');}
   const [host,guest,third]=pages;
-  await host.route('**/chapter1/coop.patch.gz',route=>route.fulfill({path:patch,contentType:'application/gzip'}));
+  for(const page of pages)await page.route('**/chapter1/coop.patch.gz',route=>route.fulfill({path:patch,contentType:'application/gzip'}));
   await connect(host,guest,1);await guest.locator('[data-character="1"]').check();await guest.locator('[data-character="2"]').check();await panel(guest,false);
   await until(host,()=>BossRoomParty.owners[1]===1&&BossRoomParty.owners[2]===1);
   await host.evaluate(()=>startBoss(presets.find(b=>b.id==='jevil')));
   await host.waitForFunction(()=>BossRoomParty.state?.myfight===0&&BossRoomParty.state?.turn===0,null,{timeout:120000});
+  await guest.waitForFunction(()=>BossRoomParty.localState?.myfight===0&&BossRoomParty.localState?.turn===0,null,{timeout:120000});
+  assert.equal(await guest.evaluate(()=>BossRoomParty.localState.local_seat),1);
   // Native menu: only the owner can move/confirm the current character's action.
   const menu=(await state(host)).menu;await tap(guest,'ArrowRight');assert.equal((await state(host)).menu,menu);
   await tap(host,'ArrowLeft');assert.equal((await state(host)).menu,4);await tap(host,'z');await until(host,()=>BossRoomParty.state.turn===1);
   const susieMenu=(await state(host)).menu;await tap(host,'ArrowRight');assert.equal((await state(host)).menu,susieMenu);
   await tap(guest,'ArrowLeft');await tap(guest,'z');await until(host,()=>BossRoomParty.state.turn===2);
   await command(host,'arena');await until(host,()=>BossRoomParty.state.hearts.length===2);
+  const items=(await state(host)).items;assert.deepEqual(items.slice(0,12),[2,2,2,2,6,7,16,16,1,1,8,8]);assert.equal(items[12],999);
   assert.deepEqual((await state(host)).hearts.map(h=>h.seat).sort(),[0,1]);
   const before=(await state(host)).hearts;
   await key(guest,'ArrowRight',true);await host.waitForTimeout(330);await key(guest,'ArrowRight',false);
@@ -46,9 +49,11 @@ async function main(){
   await command(host,'arena');await until(host,()=>BossRoomParty.state.hearts.length===3);assert.deepEqual((await state(host)).hearts.map(h=>h.seat).sort(),[0,1,2]);
   await key(guest,'ArrowRight',true);await key(third,'ArrowDown',true);await host.waitForTimeout(330);await key(guest,'ArrowRight',false);await key(third,'ArrowDown',false);
   await command(host,'hit',{seat:2,target:0});await until(host,()=>BossRoomParty.state.hp[2]<70);assert.equal((await state(host)).hp[0],90);assert.equal((await state(host)).hp[1],110);
-  await until(third,()=>{const v=document.getElementById('party-video');return v.videoWidth===640&&v.getVideoPlaybackQuality().totalVideoFrames>2;});
+  await third.waitForFunction(()=>BossRoomParty.localState?.ready===1&&BossRoomParty.localState?.myfight===0,null,{timeout:120000});
+  assert.equal(await third.evaluate(()=>BossRoomParty.localState.local_seat),2);
+  assert.equal(await third.evaluate(()=>document.getElementById('party-video')),null);
   if(process.env.PARTY_NATIVE_SCREENSHOT)await third.screenshot({path:process.env.PARTY_NATIVE_SCREENSHOT});
-  assert.deepEqual(errors,[]);console.log('RESULT: PASS — native chapter1 menu ownership, 2/3 real souls, independent movement/invulnerability, real bullet collisions, owner-only single-target damage, downed-target reroute and 3-client WebRTC video. No full boss victory claim.');
+  assert.deepEqual(errors,[]);console.log('RESULT: PASS — independent native chapter1 simulations on J1/J2/J3; synchronized turn inputs and boss launches; local seat identity; native soul movement/invulnerability; real bullet collisions; owner-only single-target damage and downed-target reroute. No full boss victory claim.');
  }catch(e){for(const p of pages)console.error(await p.evaluate(()=>({native:window.BossRoomParty?.state,status:document.getElementById('party-status')?.textContent})).catch(()=>null));console.error(errors);throw e;}
  finally{await browser?.close();await server.close();}
 }

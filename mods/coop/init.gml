@@ -12,6 +12,8 @@ for (var bs = 0; bs < 3; bs++)
     global.br_released[bs] = array_create(10, 0);
 }
 global.br_spawn = -1;
+global.br_local_seat = 0;
+global.br_seeded = false;
 global.br_hit_owner = -1;
 global.br_hit_heart = noone;
 global.br_primary = noone;
