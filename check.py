@@ -1,6 +1,8 @@
 from pathlib import Path
 import json,re,subprocess
 p=Path('dist')
+entry=Path('index.html').read_text(encoding='utf-8')
+assert 'url=./dist/' in entry and (p/'index.html').is_file()
 for file in p.rglob('*.html'):
  assert 'terminal.local' not in file.read_text(encoding='utf-8'), file
  for script in re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>',file.read_text(encoding='utf-8')):
