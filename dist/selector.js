@@ -44,7 +44,7 @@ function applyMenuVolume(value){const volume=Math.max(0,Math.min(1,Number(value)
 applyMenuVolume(localStorage.getItem('bossroom-menu-volume')??.5);
 volumeSlider.oninput=()=>{applyMenuVolume(volumeSlider.value);localStorage.setItem('bossroom-menu-volume',volumeSlider.value)};
 window.addEventListener('keydown',event=>{
- if(event.target.closest?.('#coop-panel'))return;
+ if(event.target.closest?.('#party-panel'))return;
  if(gamestarted||event.ctrlKey||event.altKey||event.metaKey)return;
  const key=event.key.toLowerCase();
  if(optionsDialog.open){if(key==='x'){event.preventDefault();optionsDialog.close()}return;}

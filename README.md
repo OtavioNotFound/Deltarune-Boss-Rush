@@ -23,6 +23,6 @@ O conteúdo a publicar em uma hospedagem estática fica em `dist/`.
 
 ## Co-op experimental
 
-O botão **CO-OP** permite compartilhar uma batalha com um amigo por WebRTC: um controla o movimento e o outro usa Z, X e C. O convidado recebe vídeo sem áudio; o anfitrião mantém o jogo e seus saves. Não há dois corações independentes. Conexão, testes e limitações de rede estão em [COOP.md](COOP.md).
+O botão **CO-OP** permite até três jogadores escolherem Kris, Susie e Ralsei, inclusive mais de um personagem por jogador. Na defesa, cada pessoa controla sua própria alma; um golpe machuca um personagem vivo pertencente a quem foi atingido. Requer conexão WebRTC direta e ainda é experimental. Instruções e limitações em [COOP.md](COOP.md).
 
-Modo de batalha experimental: as batalhas ainda precisam de validação completa no navegador. Créditos do port e checkpoints em `dist/README.txt`.
+O co-op nativo está habilitado nos capítulos 1–3; os capítulos 4–5 continuam no modo solo. As batalhas ainda precisam de validação completa. Créditos do port e checkpoints em `dist/README.txt`.

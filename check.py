@@ -6,6 +6,10 @@ for file in p.rglob('*.html'):
  for script in re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>',file.read_text(encoding='utf-8')):
   if script.strip():subprocess.run(['node','--check'],input=script,text=True,check=True,capture_output=True)
 presets=json.loads((p/'presets.json').read_text(encoding='utf-8'))
+party=json.loads((p/'party-native.json').read_text(encoding='utf-8'))
+assert party.get('version')==2 and all(chapter in (1,2,3) for chapter in party.get('chapters',[]))
+for chapter in party['chapters']:
+ assert (p/f'chapter{chapter}'/'coop.patch.gz').is_file()
 assert len(presets)==11
 for boss in presets:
  assert f"filech{boss['ch']}_0" in boss['files']

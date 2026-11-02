@@ -1,0 +1,29 @@
+#party-panel{box-sizing:border-box;width:min(640px,calc(100vw - 24px));max-height:90vh;overflow:auto;border:3px solid #a355ee;background:#06050d;color:#eee;padding:20px;font:18px Determination,monospace}
+#party-panel::backdrop{background:#000d}
+#party-panel .dialog-top{gap:12px;align-items:flex-start}
+#party-title{font-size:24px;min-width:0;overflow-wrap:anywhere}
+#party-close{flex-shrink:0}
+#party-panel::-webkit-scrollbar{display:block;width:6px}
+#party-panel::-webkit-scrollbar-thumb{background:#a355ee}
+#party-panel p{line-height:1.4}
+#party-panel label{display:block;margin:12px 0 5px}
+#party-panel textarea{box-sizing:border-box;width:100%;min-height:66px;resize:vertical;background:#111;color:#fff;border:1px solid #aaa;font:12px monospace;padding:8px}
+#party-panel button,#party-panel select{font:16px Determination,monospace;padding:8px;background:#110b1c;color:#fff;border:1px solid #a355ee;margin:4px 4px 4px 0}
+#party-panel button:focus-visible,#party-panel textarea:focus-visible,#party-panel select:focus-visible,#party-panel input:focus-visible{outline:2px solid #fff200;outline-offset:2px}
+#party-panel button:disabled,#party-panel select:disabled{opacity:.5}
+#party-characters{border:1px solid #795397;margin:16px 0;padding:10px 14px}
+#party-characters label{display:flex;align-items:center;gap:8px;margin:8px 0}
+#party-characters input{-webkit-appearance:auto;appearance:auto;accent-color:#a355ee;width:19px;height:19px;flex-shrink:0}
+#party-characters span{margin-left:auto;font-size:13px;color:#b8a0cc}
+#party-panel .party-note,#party-roster{font-size:14px;color:#b8a0cc}
+#party-status{color:#fff200;min-height:2em}
+#party-open{position:fixed;right:12px;bottom:12px;z-index:60;font:17px Determination,monospace;padding:9px;color:#fff;background:#130a20;border:2px solid #a355ee}
+#party-video{position:fixed;inset:48px 0 0;width:100%;height:calc(100% - 48px);object-fit:contain;background:#000;z-index:2;image-rendering:pixelated}
+#party-banner{position:fixed;bottom:12px;left:12px;right:110px;box-sizing:border-box;padding:8px;background:#100a1b;color:#ff7070;z-index:11;font:16px Determination,monospace;pointer-events:none}
+body[data-party-seat="1"] #party-banner{color:#ff72e9}body[data-party-seat="2"] #party-banner{color:#72e9ff}
+body.party-guest #party-banner{top:0;bottom:auto;right:0;height:48px}
+#party-waiting{position:fixed;inset:48px 0 0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:#eee;background:#030308;z-index:3;font:22px Determination,monospace}
+#party-video[hidden],#party-banner[hidden],#party-waiting[hidden]{display:none}
+body.party-guest #game-toolbar{display:none!important}
+body.party-guest #main-menu-ui{display:none}
+body.party-guest #hud-layer{z-index:12}

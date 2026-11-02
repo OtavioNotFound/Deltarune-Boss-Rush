@@ -8,6 +8,12 @@
   return new win.KeyboardEvent(type,{key,code:key.length===1?'Key'+key.toUpperCase():key,keyCode:char||number,which:char||number,charCode:char,location:0,bubbles:true,cancelable:true,view:win});
  }
  function installReceiver(win){
+  // These runner imports are a synchronous in-memory bridge, not OS clipboard IO.
+  const partyRead=()=> 'BRPARTY:'+JSON.stringify(win.parent.BossRoomParty?.packet()||{v:2,active:0,owners:[0,0,0],held:Array.from({length:3},()=>Array(10).fill(0))});
+  const partyWrite=text=>{if(typeof text==='string'&&text.startsWith('BRPARTY:')){try{win.parent.BossRoomParty?.receive(JSON.parse(text.slice(8)));}catch(error){console.error('Party native bridge:',error);}}};
+  // The runner assigns its defaults later; keep these imports on our memory bridge.
+  Object.defineProperty(win,'clipboard_get_text',{configurable:true,get:()=>partyRead,set:()=>{}});
+  Object.defineProperty(win,'clipboard_set_text',{configurable:true,get:()=>partyWrite,set:()=>{}});
   const held=new Set(),forwarded=new WeakSet();let observed;
   const getGamepads=win.navigator.getGamepads?.bind(win.navigator);
   if(getGamepads)win.navigator.getGamepads=()=>win.parent.BossRoomCoop?.active?[]:getGamepads();
