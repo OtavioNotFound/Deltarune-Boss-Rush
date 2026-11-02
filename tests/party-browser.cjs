@@ -107,6 +107,15 @@ async function main(){
   await openPanel(j3);await j3.locator('#party-stop').click();await until(host,()=>BossRoomParty.owners[2]===-1&&BossRoomParty.packet().owners[2]===0);await until(j3,()=>!BossRoomCoop.guest);
 
   await openPanel(j2);await j2.locator('#party-stop').click();await until(host,()=>BossRoomParty.owners[1]===-1&&BossRoomParty.packet().owners[1]===0);await until(host,()=>!BossRoomCoop.active);assert.equal(await host.evaluate(()=>BossRoomParty.packet().active),0);
+  await host.evaluate(async()=>{
+   selectedBoss={id:'jevil',name:'Jevil',ch:1,files:{save:'data'},battle:{encounter:1,special:0,music:'test.ogg'}};
+   window.setSaveItem=async()=>{};window.loadChapter=()=>{};
+   window.BossRoomCoop.launch=id=>window.partyTestAnnounced=id;
+   await startBoss(selectedBoss);
+  });
+  assert.equal(await host.evaluate(()=>BossRoomCoop.role),'host');
+  assert.equal(await host.evaluate(()=>BossRoomCoop.active),false);
+  assert.equal(await host.evaluate(()=>window.partyTestAnnounced),'jevil','host announces its chosen battle even when the peer is temporarily disconnected');
   await host.setViewportSize({width:360,height:800});await openPanel(host);
   assert.ok(await host.locator('#party-panel').evaluate(panel=>{const rect=panel.getBoundingClientRect();return rect.left>=0&&rect.right<=innerWidth&&panel.scrollWidth<=panel.clientWidth;}));
   assert.ok(await host.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
