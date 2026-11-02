@@ -512,6 +512,7 @@
          injectAndLoad(html);
       }).catch(error => {
         console.error(error);
+        if(window.BossRoomCoop?.guest)window.BossRoomParty?.reportLocalError(error.message);
         document.getElementById('loader-screen').innerHTML = '<p>Não foi possível carregar. <a href="./">Voltar aos chefes</a></p>'; 
         document.getElementById('loader-screen').style.display = 'none';
       });
