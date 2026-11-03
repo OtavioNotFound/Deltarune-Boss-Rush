@@ -10,7 +10,7 @@ setInterval(()=>{const packet=parent.BossRoomParty.packet();world.frames++;ctx.f
  ctx.fillStyle='#fff';ctx.font='20px monospace';ctx.fillText('PARTY TRANSPORT FIXTURE / '+world.frames,70,70);},33);
 </script></body></html>`;
 const until=(page,fn,arg)=>page.waitForFunction(fn,arg,{timeout:15000});
-async function key(page,key,down){await page.evaluate(({key,down})=>BossRoomCoop.route(key,down),{key,down});}
+async function key(page,key,down){const accepted=await page.evaluate(({key,down})=>BossRoomCoop.route(key,down),{key,down});assert.equal(accepted,true,`co-op input route rejected ${key} ${down}`);}
 async function openPanel(page){if(!await page.locator('#party-panel').evaluate(panel=>panel.open))await page.locator('#party-open').click();}
 async function closePanel(page){if(await page.locator('#party-panel').evaluate(panel=>panel.open))await page.locator('#party-close').click();}
 async function connect(host,guest,seat){
@@ -58,7 +58,7 @@ async function main(){
 
   await key(host,'ArrowUp',true);await until(host,()=>BossRoomParty.packet().held[0][2]===1);
   await key(j2,'ArrowDown',true);await until(host,()=>BossRoomParty.packet().held[1][0]===1);
-  await key(j3,'z',true);await until(host,()=>BossRoomParty.packet().held[2][4]===1);
+  await key(j3,'z',true);await until(j3,()=>BossRoomParty.packet().held[2][4]===1);await until(host,()=>BossRoomParty.packet().held[2][4]===1);
   await key(host,'ArrowUp',false);await key(j2,'ArrowDown',false);await key(j3,'z',false);
   await until(host,()=>BossRoomParty.packet().held.flat().every(value=>value===0));
   await key(j2,'z',true);await until(host,()=>BossRoomParty.packet().held[1][4]===1);await key(j2,'z',false);
@@ -73,6 +73,18 @@ async function main(){
   },fixture);
   await host.evaluate(()=>BossRoomCoop.launch('jevil'));
   await until(j2,()=>window.partyLaunched==='jevil');await until(j3,()=>window.partyLaunched==='jevil');
+  await until(j2,()=>document.getElementById('party-banner').textContent.includes('TURNO DE J1'));
+  assert.equal(await j2.locator('#party-waiting').isVisible(),true,'guest must not hide the waiting screen before its own battle is ready');
+  assert.match(await j2.locator('#party-waiting').textContent(),/Carregando a batalha local/);
+  const guestTelemetry={v:2,ready:1,turn:0,myfight:0,chars:[1,2,3],hp:[90,110,70],hearts:[]};
+  await j2.evaluate(state=>BossRoomParty.receive(state),guestTelemetry);
+  await j2.locator('#party-waiting').waitFor({state:'hidden'});
+  assert.equal(await j2.locator('#party-waiting').isVisible(),false,'guest waiting screen hides after its local runtime reports ready');
+  await j2.evaluate(()=>BossRoomParty.reportLocalError('falha de teste'));
+  assert.equal(await j2.locator('#party-waiting').isVisible(),true);
+  assert.match(await j2.locator('#party-waiting').textContent(),/falha de teste/);
+  await j2.evaluate(state=>BossRoomParty.receive(state),guestTelemetry);
+  await j2.locator('#party-waiting').waitFor({state:'hidden'});
   assert.equal(await host.evaluate(()=>document.getElementById('party-video')),null);assert.equal(await j2.evaluate(()=>partyAddedTracks),0);assert.equal(await j3.evaluate(()=>partyAddedTracks),0);
   await host.evaluate(()=>{partyFixtureHearts=[{seat:0,x:140,y:220,inv:-1},{seat:1,x:310,y:220,inv:-1},{seat:2,x:480,y:220,inv:-1}];});
   await openPanel(j2);await until(j2,()=>[...document.querySelectorAll('[data-character]')].every(input=>input.disabled));await closePanel(j2);
@@ -98,7 +110,7 @@ async function main(){
   assert.deepEqual(errors,[]);
   console.log('RESULT: PASS — GitHub Pages project path and root redirect; three clients; six-digit room codes via PeerJS signaling; data-only WebRTC; synchronized launch; lobby; exclusive multiple claims; claim locking; independent input snapshots; invalid code; no media tracks; blur; touch cancel; disconnect fallback; guest exit; 360px dialog (canvas fixture, not native combat).');
  }catch(error){
-  for(const page of pages)console.error(await page.evaluate(()=>JSON.parse(JSON.stringify({status:document.getElementById('party-status')?.textContent,owners:window.BossRoomParty?.owners,packet:window.BossRoomParty?.packet(),seat:window.BossRoomParty?.seat,channels:window.partyTestChannels?.map(channel=>channel.readyState)}))).catch(()=>({closed:true})));
+  for(const page of pages)console.error(await page.evaluate(()=>JSON.parse(JSON.stringify({status:document.getElementById('party-status')?.textContent,owners:window.BossRoomParty?.owners,packet:(()=>{const p=window.BossRoomParty?.packet();if(p)p.held=p.held.map(row=>row.join(''));return p})(),seat:window.BossRoomParty?.seat,role:window.BossRoomCoop?.role,active:window.BossRoomCoop?.active,channels:window.partyTestChannels?.map(channel=>channel.readyState)}))).catch(()=>({closed:true})));
   console.error('Browser errors:',errors);throw error;
  }finally{await browser?.close();await server.close();}
 }

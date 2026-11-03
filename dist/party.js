@@ -22,7 +22,7 @@
  const waiting=document.createElement('div');waiting.id='party-waiting';waiting.hidden=true;waiting.textContent='Aguardando o anfitrião iniciar a batalha…';document.body.append(waiting);
  const el=id=>document.getElementById('party-'+id),status=text=>{el('status').textContent=text;};
  let party=new Party(),mode=null,mySeat=0,guestPeer=null,signalingPeer=null,roomCode='',viewOwners=[0,-1,-1],viewConnected=[true,false,false];
- let nativeState=null,localNativeState=null,nativeTime=0,remoteHeld=[[],[],[]],busy=false,generation=0,claimSeq=0,stateSeq=0,pendingClaim=null,pendingLaunch=null,activeBossId=null;
+ let nativeState=null,localNativeState=null,nativeTime=0,localNativeTime=0,localError='',remoteHeld=[[],[],[]],busy=false,generation=0,claimSeq=0,stateSeq=0,pendingClaim=null,pendingLaunch=null,activeBossId=null;
  const peers=new Map(),localHeld=new Set(),peerOptions=()=>window.BOSSROOM_PEER_OPTIONS||{};
  const hostActive=()=>mode==='host'&&[...peers.values()].some(peer=>peer.connected);
  const active=()=>hostActive()||(mode==='guest'&&guestPeer?.connected===true);
@@ -63,7 +63,7 @@
    if(data.type==='hello'&&seatValid(data.seat)&&data.seat>0){clearTimeout(peer.handshakeTimer);peer.seat=data.seat;mySeat=data.seat;gamestarted=true;document.body.classList.add('party-guest');applyConfig();status('Conectado. Escolha seus personagens.');render();if(pendingLaunch)window.BossRoomLaunch?.(pendingLaunch);}
    else if(data.type==='full'){drop(peer,'Essa sala já está cheia.');return;}
    else if(data.type==='state'&&validState(data)&&data.seq>peer.stateSeq){peer.stateSeq=data.seq;peer.lastSeen=Date.now();viewOwners=data.owners.slice();viewConnected=data.connected.slice();nativeState=data.state;remoteHeld=data.held;nativeTime=Date.now();render();}
-   else if(data.type==='launch'&&typeof data.boss==='string'&&/^[a-z0-9-]{1,32}$/.test(data.boss)){pendingLaunch=data.boss;window.BossRoomLaunch?.(pendingLaunch);}
+   else if(data.type==='launch'&&typeof data.boss==='string'&&/^[a-z0-9-]{1,32}$/.test(data.boss)){pendingLaunch=data.boss;localNativeState=null;localNativeTime=0;localError='';window.BossRoomLaunch?.(pendingLaunch);}
    else if(data.type==='claim-result'&&typeof data.ok==='boolean'&&Number.isSafeInteger(data.seq)){if(pendingClaim?.seq===data.seq)pendingClaim=null;status(data.ok?'Personagens reservados. Feche o painel para jogar.':'Escolha recusada: personagem ocupado ou esquiva em andamento.');}
   }
  }
@@ -124,8 +124,12 @@
   el('code').disabled=mode!==null;el('join').disabled=busy||mode!==null||gamestarted;el('host').disabled=busy||mode!==null;el('stop').hidden=mode===null;
   const mine=names.filter((_,char)=>owners[char]===mySeat),turnSlot=nativeState?.turn,character=Number.isInteger(turnSlot)?nativeState?.chars?.[turnSlot]:null;
   const turnOwner=character>=1&&character<=3?(owners[character-1]===-1?0:owners[character-1]):0,ready=nativeState?.ready===1&&Date.now()-nativeTime<3000;
+  const localReady=mode==='guest'&&!localError&&localNativeState?.ready===1&&Date.now()-localNativeTime<3000;
   banner.textContent='J'+(mySeat+1)+' · '+(mine.length?mine.join(' / '):'ESCOLHA SEUS PERSONAGENS')+(ready?(locked()?' · ESQUIVA':' · TURNO DE J'+(turnOwner+1)):' · AGUARDANDO BATALHA');banner.hidden=!active();
-  if(mode==='guest'){waiting.hidden=ready;waiting.textContent='Aguardando o anfitrião iniciar a batalha…';}
+  if(mode==='guest'){
+   waiting.hidden=localReady;
+   waiting.textContent=localError?'Falha ao iniciar sua batalha: '+localError:ready?'Carregando a batalha local… Se continuar assim, verifique WebGL e recarregue a página.':'Aguardando o anfitrião iniciar a batalha…';
+  }
   document.body.dataset.partySeat=String(mySeat);
  }
  panel.querySelectorAll('[data-character]').forEach(input=>input.onchange=()=>{const characters=[...panel.querySelectorAll('[data-character]:checked')].map(node=>Number(node.dataset.character));
@@ -143,7 +147,7 @@
  document.addEventListener('visibilitychange',()=>{if(document.hidden)release();});window.addEventListener('pagehide',()=>stop());
  setInterval(()=>{const now=Date.now();if(mode==='host'){party.expire();for(const peer of [...peers.values()])if(peer.connected&&now-peer.lastSeen>30000)drop(peer,'J'+(peer.seat+1)+' ficou sem resposta. Ele pode entrar de novo com o mesmo código.');broadcast();}
   else if(mode==='guest'&&guestPeer?.connected){if(now-guestPeer.lastSeen>30000)drop(guestPeer,'Anfitrião sem resposta. Entre de novo com o mesmo código.');else inputSnapshot();}render();},100);
- window.BossRoomParty={get state(){return nativeState;},get localState(){return mode==='guest'?localNativeState:nativeState;},qa:null,packet(){let packet;if(mode==='guest'){packet={v:2,active:active()?1:0,local_seat:mySeat,owners:viewOwners.map(owner=>owner<0?0:owner),held:remoteHeld.map((held,seat)=>Array.from({length:10},(_,i)=>i<7&&(seat===mySeat?localHeld.has(BossRoomPartyCore.keys[i]):held.includes(BossRoomPartyCore.keys[i]))?1:0))};}else{packet=party.packet(hostActive());packet.local_seat=0;}if(this.qa!==null)packet.qa=this.qa;return packet;},receive(state){if(mode==='guest'){if(state?.v===2&&state.ready===1)localNativeState=state;return;}if(state?.v!==2||state.ready!==1)return;nativeState=state;nativeTime=Date.now();},get owners(){return(mode==='guest'?viewOwners:party.owners).slice();},get seat(){return mySeat;},launch};
+ window.BossRoomParty={get state(){return nativeState;},get localState(){return mode==='guest'?localNativeState:nativeState;},get localReady(){return mode==='guest'&&localNativeState?.ready===1&&Date.now()-localNativeTime<3000;},reportLocalError(message){if(mode!=='guest')return;localError=String(message||'Erro desconhecido.').slice(0,180);render();},qa:null,packet(){let packet;if(mode==='guest'){packet={v:2,active:active()?1:0,local_seat:mySeat,owners:viewOwners.map(owner=>owner<0?0:owner),held:remoteHeld.map((held,seat)=>Array.from({length:10},(_,i)=>i<7&&(seat===mySeat?localHeld.has(BossRoomPartyCore.keys[i]):held.includes(BossRoomPartyCore.keys[i]))?1:0))};}else{packet=party.packet(hostActive());packet.local_seat=0;}if(this.qa!==null)packet.qa=this.qa;return packet;},receive(state){if(mode==='guest'){if(state?.v===2&&state.ready===1){localNativeState=state;localNativeTime=Date.now();localError='';}return;}if(state?.v!==2||state.ready!==1)return;nativeState=state;nativeTime=Date.now();},get owners(){return(mode==='guest'?viewOwners:party.owners).slice();},get seat(){return mySeat;},launch};
  window.BossRoomCoop={get active(){return active();},get guest(){return mode==='guest'&&guestPeer!==null;},get role(){return mode;},releaseAll(){release();},launch,route(key,down){if(!active())return false;if(!keys.includes(key))return true;if(panel.open){release();return true;}down?localHeld.add(key):localHeld.delete(key);if(mode==='host')party.input(0,key,down);else inputSnapshot();return true;}};
  render();
 })();
