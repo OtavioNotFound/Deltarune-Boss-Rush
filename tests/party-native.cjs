@@ -25,9 +25,9 @@ async function main(){
   assert.equal(await guest.evaluate(()=>BossRoomParty.localState.local_seat),1);
   // Native menu: only the owner can move/confirm the current character's action.
   const menu=(await state(host)).menu;await tap(guest,'ArrowRight');assert.equal((await state(host)).menu,menu);
-  await tap(host,'ArrowLeft');assert.equal((await state(host)).menu,4);await tap(host,'z');await until(host,()=>BossRoomParty.state.turn===1);
+  await tap(host,'ArrowLeft');assert.equal((await state(host)).menu,4);await guest.waitForFunction(()=>BossRoomParty.localState?.menu===4);await tap(host,'z');await until(host,()=>BossRoomParty.state.turn===1);await until(guest,()=>BossRoomParty.localState?.turn===1);
   const susieMenu=(await state(host)).menu;await tap(host,'ArrowRight');assert.equal((await state(host)).menu,susieMenu);
-  await tap(guest,'ArrowLeft');await tap(guest,'z');await until(host,()=>BossRoomParty.state.turn===2);
+  await tap(guest,'ArrowLeft');await tap(guest,'z');await until(host,()=>BossRoomParty.state.turn===2);await until(guest,()=>BossRoomParty.localState?.turn===2);
   await command(host,'arena');await until(host,()=>BossRoomParty.state.hearts.length===2);
   const items=(await state(host)).items;assert.deepEqual(items.slice(0,12),[2,2,2,2,6,7,16,16,1,1,8,8]);assert.equal(items[12],999);
   assert.deepEqual((await state(host)).hearts.map(h=>h.seat).sort(),[0,1]);
@@ -45,7 +45,7 @@ async function main(){
   await command(host,'hit',{seat:1,target:1});await host.waitForTimeout(100);after=(await state(host)).hp;assert.equal(after[0],hpDown[0]);assert.equal(after[1],0);assert.ok(after[2]<hpDown[2]);
   await command(host,'clear');await command(host,'heal');
   await panel(guest,true);await guest.locator('[data-character="2"]').uncheck();await panel(guest,false);await until(host,()=>BossRoomParty.owners[2]===-1);
-  await connect(host,third,2);await until(third,()=>!document.querySelector('[data-character="2"]').disabled);await third.locator('[data-character="2"]').check();await panel(third,false);await until(host,()=>BossRoomParty.owners[2]===2);
+  await connect(host,third,2);await until(third,()=>!document.querySelector('[data-character="2"]').disabled);await third.locator('[data-character="2"]').click();await panel(third,false);await until(host,()=>BossRoomParty.owners[2]===2);
   await command(host,'arena');await until(host,()=>BossRoomParty.state.hearts.length===3);assert.deepEqual((await state(host)).hearts.map(h=>h.seat).sort(),[0,1,2]);
   await key(guest,'ArrowRight',true);await key(third,'ArrowDown',true);await host.waitForTimeout(330);await key(guest,'ArrowRight',false);await key(third,'ArrowDown',false);
   await command(host,'hit',{seat:2,target:0});await until(host,()=>BossRoomParty.state.hp[2]<70);assert.equal((await state(host)).hp[0],90);assert.equal((await state(host)).hp[1],110);
