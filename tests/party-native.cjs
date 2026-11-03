@@ -14,12 +14,12 @@ async function main(){
  const server=await serve();let browser;const pages=[],errors=[];
  try{
   browser=await chromium.launch({channel:process.env.BOSSROOM_BROWSER_CHANNEL||'chrome',headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--autoplay-policy=no-user-gesture-required']});
-  for(let i=0;i<3;i++){const p=await(await browser.newContext()).newPage();pages.push(p);p.on('pageerror',e=>errors.push(e.message));p.on('dialog',async d=>{errors.push(d.message());await d.dismiss();});await p.goto(server.url);await p.waitForSelector('#launch');}
+  for(let i=0;i<3;i++){const p=await(await browser.newContext()).newPage();pages.push(p);p.on('pageerror',e=>errors.push(e.message));p.on('dialog',async d=>{errors.push(d.message());await d.dismiss();});await p.goto(server.url+'?boss=jevil');await p.waitForSelector('#launch');}
   const [host,guest,third]=pages;
   for(const page of pages)await page.route('**/chapter1/coop.patch.gz',route=>route.fulfill({path:patch,contentType:'application/gzip'}));
   await connect(host,guest,1);await guest.locator('[data-character="1"]').check();await guest.locator('[data-character="2"]').check();await panel(guest,false);
   await until(host,()=>BossRoomParty.owners[1]===1&&BossRoomParty.owners[2]===1);
-  await host.evaluate(()=>startBoss(presets.find(b=>b.id==='jevil')));
+  await host.locator('#launch').click();
   await host.waitForFunction(()=>BossRoomParty.state?.myfight===0&&BossRoomParty.state?.turn===0,null,{timeout:120000});
   await guest.waitForFunction(()=>BossRoomParty.localState?.myfight===0&&BossRoomParty.localState?.turn===0,null,{timeout:120000});
   assert.equal(await guest.evaluate(()=>BossRoomParty.localState.local_seat),1);
