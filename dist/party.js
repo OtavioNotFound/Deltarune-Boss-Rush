@@ -22,7 +22,7 @@
  const waiting=document.createElement('div');waiting.id='party-waiting';waiting.hidden=true;waiting.textContent='Aguardando o anfitrião iniciar a batalha…';document.body.append(waiting);
  const el=id=>document.getElementById('party-'+id),status=text=>{el('status').textContent=text;};
  let party=new Party(),mode=null,mySeat=0,guestPeer=null,signalingPeer=null,roomCode='',viewOwners=[0,-1,-1],viewConnected=[true,false,false];
- let nativeState=null,localNativeState=null,nativeTime=0,localNativeTime=0,localError='',remoteHeld=[[],[],[]],busy=false,generation=0,claimSeq=0,stateSeq=0,pendingClaim=null,pendingLaunch=null,activeBossId=null;
+ let nativeState=null,localNativeState=null,nativeTime=0,localNativeTime=0,localError='',remoteHeld=[[],[],[]],busy=false,generation=0,claimSeq=0,stateSeq=0,pendingClaim=null,pendingLaunch=null,activeBossId=null,localLaunchStarted=false;
  const peers=new Map(),localHeld=new Set(),peerOptions=()=>window.BOSSROOM_PEER_OPTIONS||{};
  const hostActive=()=>mode==='host'&&[...peers.values()].some(peer=>peer.connected);
  const active=()=>hostActive()||(mode==='guest'&&guestPeer?.connected===true);
@@ -48,10 +48,17 @@
    chars:Array.isArray(nativeState.chars)?nativeState.chars.slice(0,3):[],hp:Array.isArray(nativeState.hp)?nativeState.hp.slice(0,3):[],
    hearts:Array.isArray(nativeState.hearts)?nativeState.hearts.slice(0,3).map(heart=>({seat:heart.seat,x:heart.x,y:heart.y,inv:heart.inv})):[],held:party.packet(hostActive()).held};
  }
- function broadcast(){if(mode!=='host')return;const message={v:2,type:'state',seq:stateSeq++,owners:party.owners,connected:party.connected,held:party.packet(hostActive()).held,state:stateForWire()};for(const peer of peers.values())if(peer.connected)send(peer,message);}
+ function broadcast(){if(mode!=='host')return;const message={v:2,type:'state',seq:stateSeq++,owners:party.owners,connected:party.connected,held:party.packet(hostActive()).held,state:stateForWire(),boss:activeBossId};for(const peer of peers.values())if(peer.connected)send(peer,message);}
  function validState(data){
-   return Number.isSafeInteger(data.seq)&&data.seq>=0&&Array.isArray(data.owners)&&data.owners.length===3&&data.owners.every(owner=>owner===-1||seatValid(owner))&&Array.isArray(data.connected)&&data.connected.length===3&&data.connected.every(value=>typeof value==='boolean')&&Array.isArray(data.held)&&data.held.length===3&&data.held.every(keys=>Array.isArray(keys)&&keys.length===10&&keys.every(value=>value===0||value===1))&&
+   return Number.isSafeInteger(data.seq)&&data.seq>=0&&(data.boss===undefined||data.boss===null||validBossId(data.boss))&&Array.isArray(data.owners)&&data.owners.length===3&&data.owners.every(owner=>owner===-1||seatValid(owner))&&Array.isArray(data.connected)&&data.connected.length===3&&data.connected.every(value=>typeof value==='boolean')&&Array.isArray(data.held)&&data.held.length===3&&data.held.every(keys=>Array.isArray(keys)&&keys.length===10&&keys.every(value=>value===0||value===1))&&
    (data.state===null||(data.state?.v===2&&[0,1].includes(data.state.ready)&&Number.isInteger(data.state.turn)&&Number.isFinite(data.state.myfight)&&Array.isArray(data.state.held)&&data.state.held.length===3&&data.state.held.every(keys=>Array.isArray(keys)&&keys.length===10&&keys.every(value=>value===0||value===1))&&Array.isArray(data.state.hearts)&&data.state.hearts.length<=3&&data.state.hearts.every(heart=>seatValid(heart?.seat)&&Number.isFinite(heart.x)&&Number.isFinite(heart.y)&&Number.isFinite(heart.inv))&&Array.isArray(data.state.chars)&&data.state.chars.length<=3&&data.state.chars.every(char=>Number.isInteger(char)&&char>=0&&char<100)&&Array.isArray(data.state.hp)&&data.state.hp.length<=3&&data.state.hp.every(Number.isFinite)));
+ }
+ const validBossId=boss=>typeof boss==='string'&&/^[a-z0-9-]{1,32}$/.test(boss);
+ function startGuestBoss(boss,retry=false){
+  if(mode!=='guest'||!guestPeer||!validBossId(boss))return;
+  if(pendingLaunch!==boss||retry){pendingLaunch=boss;localNativeState=null;localNativeTime=0;localError='';localLaunchStarted=false;}
+  if(!window.BossRoomLaunch||localLaunchStarted)return;
+  localLaunchStarted=true;window.BossRoomLaunch(boss);
  }
  function receive(peer,data){
   try{if(JSON.stringify(data).length>16384)return;}catch{return;}
@@ -60,10 +67,10 @@
    if(data.type==='input'&&party.receive(peer.seat,data)){peer.lastSeen=Date.now();return;}
    if(data.type==='claim'&&Number.isSafeInteger(data.seq)&&data.seq>=0&&data.seq>peer.claimSeq){peer.claimSeq=data.seq;peer.lastSeen=Date.now();const accepted=party.claim(peer.seat,data.characters,locked());send(peer,{v:2,type:'claim-result',seq:data.seq,ok:accepted});broadcast();render();}
   }else if(mode==='guest'&&peer===guestPeer){
-   if(data.type==='hello'&&seatValid(data.seat)&&data.seat>0){clearTimeout(peer.handshakeTimer);peer.seat=data.seat;mySeat=data.seat;gamestarted=true;document.body.classList.add('party-guest');applyConfig();status('Conectado. Escolha seus personagens.');render();if(pendingLaunch)window.BossRoomLaunch?.(pendingLaunch);}
+   if(data.type==='hello'&&seatValid(data.seat)&&data.seat>0){clearTimeout(peer.handshakeTimer);peer.seat=data.seat;mySeat=data.seat;gamestarted=true;document.body.classList.add('party-guest');applyConfig();status('Conectado. Escolha seus personagens.');render();if(pendingLaunch)startGuestBoss(pendingLaunch);}
    else if(data.type==='full'){drop(peer,'Essa sala já está cheia.');return;}
-   else if(data.type==='state'&&validState(data)&&data.seq>peer.stateSeq){peer.stateSeq=data.seq;peer.lastSeen=Date.now();viewOwners=data.owners.slice();viewConnected=data.connected.slice();nativeState=data.state;remoteHeld=data.held;nativeTime=Date.now();render();}
-   else if(data.type==='launch'&&typeof data.boss==='string'&&/^[a-z0-9-]{1,32}$/.test(data.boss)){pendingLaunch=data.boss;localNativeState=null;localNativeTime=0;localError='';window.BossRoomLaunch?.(pendingLaunch);}
+   else if(data.type==='state'&&validState(data)&&data.seq>peer.stateSeq){peer.stateSeq=data.seq;peer.lastSeen=Date.now();viewOwners=data.owners.slice();viewConnected=data.connected.slice();nativeState=data.state;remoteHeld=data.held;nativeTime=Date.now();if(validBossId(data.boss))startGuestBoss(data.boss);render();}
+   else if(data.type==='launch'&&validBossId(data.boss))startGuestBoss(data.boss,true);
    else if(data.type==='claim-result'&&typeof data.ok==='boolean'&&Number.isSafeInteger(data.seq)){if(pendingClaim?.seq===data.seq)pendingClaim=null;status(data.ok?'Personagens reservados. Feche o painel para jogar.':'Escolha recusada: personagem ocupado ou esquiva em andamento.');}
   }
  }
@@ -112,7 +119,7 @@
   subscribeGuest(peer);
   peer.on('error',()=>clearTimeout(openTimer));
  }
- function launch(boss){activeBossId=boss;if(mode==='host'){for(const peer of peers.values())if(peer.connected)send(peer,{v:2,type:'launch',boss});}pendingLaunch=boss;window.BossRoomLaunch?.(boss);}
+ function launch(boss){if(!validBossId(boss))return;activeBossId=boss;if(mode==='host'){for(const peer of peers.values())if(peer.connected)send(peer,{v:2,type:'launch',boss});}pendingLaunch=boss;window.BossRoomLaunch?.(boss);}
  function render(){
   const owners=mode==='guest'?viewOwners:party.owners;
   for(let char=0;char<3;char++){const owner=owners[char],input=panel.querySelector('[data-character="'+char+'"]');input.checked=mode==='guest'&&pendingClaim?pendingClaim.characters.includes(char):owner===mySeat;
@@ -128,7 +135,7 @@
   banner.textContent='J'+(mySeat+1)+' · '+(mine.length?mine.join(' / '):'ESCOLHA SEUS PERSONAGENS')+(ready?(locked()?' · ESQUIVA':' · TURNO DE J'+(turnOwner+1)):' · AGUARDANDO BATALHA');banner.hidden=!active();
   if(mode==='guest'){
    waiting.hidden=localReady;
-   waiting.textContent=localError?'Falha ao iniciar sua batalha: '+localError:ready?'Carregando a batalha local… Se continuar assim, verifique WebGL e recarregue a página.':'Aguardando o anfitrião iniciar a batalha…';
+   waiting.textContent=localError?'Falha ao iniciar sua batalha: '+localError:ready?(pendingLaunch?'Carregando a batalha local… Se continuar assim, verifique WebGL e recarregue a página.':'O anfitrião já começou, mas a partida ainda não sincronizou. Tentando novamente…'):'Aguardando o anfitrião iniciar a batalha…';
   }
   document.body.dataset.partySeat=String(mySeat);
  }

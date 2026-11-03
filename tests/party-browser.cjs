@@ -65,13 +65,17 @@ async function main(){
   await until(host,()=>BossRoomParty.packet().held[1][4]===0);
 
   // Independent local runtimes receive the same launch command; data transport carries no media tracks.
-  await j2.evaluate(()=>window.BossRoomLaunch=id=>window.partyLaunched=id);await j3.evaluate(()=>window.BossRoomLaunch=id=>window.partyLaunched=id);
+  // J2 has not loaded the battle launcher yet; the host's next periodic state must recover the missed launch event.
+  await j3.evaluate(()=>window.BossRoomLaunch=id=>window.partyLaunched=id);
   await host.evaluate(html=>{
    gamestarted=true;document.getElementById('main-menu-ui').style.display='none';frame.style.display='block';injectAndLoad(html);
    window.partyFixtureHearts=[];
    setInterval(()=>BossRoomParty.receive({v:2,ready:1,turn:0,myfight:0,chars:[1,2,3],hp:[90,110,70],hearts:partyFixtureHearts}),50);
   },fixture);
+  await j2.evaluate(()=>window.BossRoomLaunch=undefined);
   await host.evaluate(()=>BossRoomCoop.launch('jevil'));
+  await j2.waitForTimeout(250);
+  await j2.evaluate(()=>window.BossRoomLaunch=id=>window.partyLaunched=id);
   await until(j2,()=>window.partyLaunched==='jevil');await until(j3,()=>window.partyLaunched==='jevil');
   await until(j2,()=>document.getElementById('party-banner').textContent.includes('TURNO DE J1'));
   assert.equal(await j2.locator('#party-waiting').isVisible(),true,'guest must not hide the waiting screen before its own battle is ready');
