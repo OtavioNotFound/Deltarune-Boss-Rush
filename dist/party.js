@@ -5,7 +5,7 @@
  const names=['Kris','Susie','Ralsei'];
  const panel=document.createElement('dialog');panel.id='party-panel';panel.setAttribute('aria-labelledby','party-title');
  panel.innerHTML=`<div class="dialog-top"><h2 id="party-title">CO-OP · ESCOLHA SUA PARTY</h2><button id="party-close" aria-label="Fechar co-op">×</button></div>
- <p>Cada jogador roda sua própria cópia da batalha. A rede sincroniza as escolhas e controles; vídeo do anfitrião não é enviado.</p>
+ <p>Cada jogador roda sua própria cópia da batalha. A rede sincroniza as escolhas e controles; vídeo do anfitrião não é enviado. Jarona e Pink ainda têm problemas de controle em co-op. Tenna usa minigames que não sincronizam: jogue essa luta no modo solo.</p>
  <fieldset id="party-characters"><legend>SEUS PERSONAGENS</legend>${names.map((name,i)=>`<label><input type="checkbox" data-character="${i}"> ${name} <span id="party-owner-${i}"></span></label>`).join('')}</fieldset>
  <p id="party-roster" aria-live="polite"></p>
  <details><summary>COMO JOGAR EM CO-OP</summary><p>1. O anfitrião cria uma sala e envia o código de 6 dígitos. 2. Os amigos digitam o código e entram. 3. Cada um escolhe seus personagens. Depois, o anfitrião inicia a batalha.</p></details>
@@ -149,8 +149,19 @@
  el('copy').onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);status('Código copiado. Envie para seus amigos.');}catch{status('Seu código é '+roomCode+'. Selecione e copie.');}};
  el('controls').onclick=()=>toggleMobileHardware();el('stop').onclick=()=>stop();
  open.onclick=()=>{releaseGameKeys();release();render();panel.showModal();};
- el('close').onclick=()=>{panel.close();};
- panel.addEventListener('close',release);panel.addEventListener('cancel',release);window.addEventListener('blur',release);
+ function returnGameFocus(){
+  release();
+  // The dialog's close button otherwise keeps keyboard focus over the game.
+  // Refocus the battle canvas (or the menu launch button before a battle).
+  requestAnimationFrame(()=>{
+   const frame=document.getElementById('game-frame');
+   let canvas;try{canvas=frame?.contentDocument?.querySelector('canvas');}catch{}
+   const target=canvas||document.getElementById('launch');
+   if(target){if(target===canvas&&!target.hasAttribute('tabindex'))target.setAttribute('tabindex','0');target.focus({preventScroll:true});}
+  });
+ }
+ el('close').onclick=()=>panel.close();
+ panel.addEventListener('close',returnGameFocus);panel.addEventListener('cancel',returnGameFocus);window.addEventListener('blur',release);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)release();});window.addEventListener('pagehide',()=>stop());
  setInterval(()=>{const now=Date.now();if(mode==='host'){party.expire();for(const peer of [...peers.values()])if(peer.connected&&now-peer.lastSeen>30000)drop(peer,'J'+(peer.seat+1)+' ficou sem resposta. Ele pode entrar de novo com o mesmo código.');broadcast();}
   else if(mode==='guest'&&guestPeer?.connected){if(now-guestPeer.lastSeen>30000)drop(guestPeer,'Anfitrião sem resposta. Entre de novo com o mesmo código.');else inputSnapshot();}render();},100);
